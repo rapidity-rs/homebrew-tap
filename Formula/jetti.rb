@@ -1,7 +1,6 @@
 class Jetti < Formula
-  desc "A fast, cross-platform tool for organizing git repositories"
+  desc "Fast, cross-platform tool for organizing git repositories"
   homepage "https://github.com/rapidity-rs/jetti"
-  version "0.2.0"
   license "MIT"
 
   on_macos do
