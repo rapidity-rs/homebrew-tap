@@ -6,6 +6,7 @@ Homebrew formulae for [rapidity-rs](https://github.com/rapidity-rs) tools.
 
 ```sh
 brew tap rapidity-rs/tap
+brew trust rapidity-rs/tap   # required once for third-party taps
 brew install jetti
 ```
 
@@ -14,6 +15,9 @@ Or in one step:
 ```sh
 brew install rapidity-rs/tap/jetti
 ```
+
+> Homebrew refuses to load formulae from third-party taps until you trust them.
+> If you see an "untrusted tap" error, run `brew trust rapidity-rs/tap`.
 
 ## Available formulae
 
