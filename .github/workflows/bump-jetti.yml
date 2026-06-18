@@ -1,0 +1,85 @@
+name: Bump jetti formula
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump formula to latest jetti release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="$(gh release view --repo rapidity-rs/jetti --json tagName --jq '.tagName' | sed 's/^v//')"
+          CURRENT="$(sed -n 's#.*/download/v\([0-9][0-9.]*\)/.*#\1#p' Formula/jetti.rb | head -1)"
+          echo "latest=${VERSION} current=${CURRENT:-none}"
+          if [ "${VERSION}" = "${CURRENT}" ]; then
+            echo "Formula already at v${VERSION}; nothing to do."
+            exit 0
+          fi
+
+          BASE="https://github.com/rapidity-rs/jetti/releases/download/v${VERSION}"
+          tmp="$(mktemp -d)"
+          declare -A SHA
+          for target in \
+            aarch64-apple-darwin \
+            x86_64-apple-darwin \
+            aarch64-unknown-linux-gnu \
+            x86_64-unknown-linux-gnu; do
+            curl -fsSL "${BASE}/jetti-${target}.tar.gz" -o "${tmp}/${target}.tar.gz"
+            SHA[$target]="$(sha256sum "${tmp}/${target}.tar.gz" | cut -d' ' -f1)"
+          done
+
+          cat > Formula/jetti.rb <<EOF
+          class Jetti < Formula
+            desc "Fast, cross-platform tool for organizing git repositories"
+            homepage "https://github.com/rapidity-rs/jetti"
+            license "MIT"
+
+            on_macos do
+              on_arm do
+                url "${BASE}/jetti-aarch64-apple-darwin.tar.gz"
+                sha256 "${SHA[aarch64-apple-darwin]}"
+              end
+              on_intel do
+                url "${BASE}/jetti-x86_64-apple-darwin.tar.gz"
+                sha256 "${SHA[x86_64-apple-darwin]}"
+              end
+            end
+
+            on_linux do
+              on_arm do
+                url "${BASE}/jetti-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA[aarch64-unknown-linux-gnu]}"
+              end
+              on_intel do
+                url "${BASE}/jetti-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA[x86_64-unknown-linux-gnu]}"
+              end
+            end
+
+            def install
+              bin.install "jetti"
+              generate_completions_from_executable(bin/"jetti", "completions", shells: [:bash, :zsh, :fish])
+            end
+
+            test do
+              assert_match "jetti #{version}", shell_output("#{bin}/jetti --version")
+            end
+          end
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/jetti.rb
+          git commit -m "chore: bump jetti to ${VERSION}"
+          git push
