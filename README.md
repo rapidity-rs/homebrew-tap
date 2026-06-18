@@ -24,6 +24,7 @@ brew install rapidity-rs/tap/jetti
 | Formula | Description |
 |---------|-------------|
 | [`jetti`](https://github.com/rapidity-rs/jetti) | A fast, cross-platform tool for organizing git repositories |
+| [`lets`](https://github.com/rapidity-rs/lets) | A declarative CLI builder — define commands in KDL, get a CLI instantly |
 
 ## Updating
 
